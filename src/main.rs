@@ -3,24 +3,12 @@ use std::io::Read;
 use std::str;
 
 
-fn main() {
+fn main() -> std::io::Result<()> {
     // リスナーの作成
-    let result = TcpListener::bind("127.0.0.1:7777");
-    if result.is_err() {
-        println!("{}", result.err().unwrap().to_string());
-        panic!();
-    }
-    println!("open!");
-    let listener = result.unwrap();
+    let listener = TcpListener::bind("127.0.0.1:7777")?;
 
     // 接続待ち
-    let result = listener.accept();
-    if result.is_err() {
-        println!("{}", result.err().unwrap().to_string());
-        panic!();
-    }
-    println!("connect!");
-    let (mut stream, _) = result.unwrap();
+    let (mut stream, _) = listener.accept()?;
 
     loop {
         let mut buf = [0u8; 1024];
@@ -36,8 +24,9 @@ fn main() {
             },
             Result::Err(err) => {
                 println!("{}", err.to_string());
-                panic!();
+                break;
             }
         }
     }
+    Ok(())
 }
