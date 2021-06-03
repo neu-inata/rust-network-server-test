@@ -1,14 +1,31 @@
-use std::net::TcpListener;
+use std::net::{TcpStream, TcpListener};
 use std::io::Read;
 use std::str;
-
+use std::thread;
+use std::sync::{Arc, Mutex};
+use std::mem;
 
 fn main() -> std::io::Result<()> {
-    // リスナーの作成
-    let listener = TcpListener::bind("127.0.0.1:7777")?;
+    
+    let stream: TcpStream;
+    unsafe{
+        stream = mem::uninitialized();
+    }
+    let stream = Arc::new(Mutex::new(stream));
+    let stream_clone = stream.clone();
 
     // 接続待ち
-    let (mut stream, _) = listener.accept()?;
+    let handle = thread::spawn(move ||{
+        // リスナーの作成
+        let listener = TcpListener::bind("127.0.0.1:7777");
+        let listener = listener.unwrap();
+
+        let mut s = stream_clone.lock().unwrap();
+        let result = listener.accept();
+        *s = result.unwrap().0;
+    });
+    let _ = handle.join();
+    let mut stream = stream.as_ref().lock().unwrap();
 
     loop {
         let mut buf = [0u8; 1024];
